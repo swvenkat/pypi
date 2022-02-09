@@ -10,7 +10,6 @@ from pensando_dss.psm.model.api_status import ApiStatus
 from pprint import pprint
 from dateutil.parser import parse as dateutil_parser
 import argparse
-from argparse import ArgumentParser
 import sys
 # Defining the host is optional and defaults to http://localhost
 # See configuration.py for a list of all supported configuration parameters.
@@ -46,12 +45,8 @@ with pensando_dss.psm.ApiClient(configuration) as api_client:
     # example passing only required values which don't have defaults set
     try:
         # List VirtualRouter objects
-        class SmartFormatter(argparse.HelpFormatter):
-            def _split_lines(self, text, width):
-                if text.startswith('R|'):
-                    return text[2:].splitlines()
-                return argparse.HelpFormatter._split_lines(self, text, width)
-        parser = ArgumentParser(description='List configured VRF objects on the Pensando PSM', formatter_class=SmartFormatter)
+        description = "List all configured VRF objects on the Pensando PSM"
+        parser = argparse.ArgumentParser(description=description)
         parser.add_argument("-a", "--all", help = "Show all configured VRFs", action="store_true")
         parser.add_argument("-name", "---name", help = "Show specific VRF")
         args = parser.parse_args()
@@ -64,6 +59,9 @@ with pensando_dss.psm.ApiClient(configuration) as api_client:
         if args.name:
             api_response = api_instance.list_virtual_router1(o_name=args.name)
             pprint(api_response)
+    except pensando_dss.psm.ApiException as e:
+        print("Exception when calling NetworkV1Api->list_virtual_router1: %s\n" % e)        
+
     except pensando_dss.psm.ApiException as e:
         print("Exception when calling NetworkV1Api->list_virtual_router1: %s\n" % e)
 
