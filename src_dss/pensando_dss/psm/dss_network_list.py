@@ -1,4 +1,3 @@
-
 import time
 import os
 import pensando_dss
@@ -19,9 +18,10 @@ configuration = pensando_dss.psm.Configuration(
 )
 configuration.verify_ssl = False
 
+#This is used to get the max width to use for displaying columns
 def get_max_width(**kwargs):
     widths = []
-    padding = 10
+    padding = 5
     if "key1" in kwargs:
         key1 = kwargs["key1"]
     if "key2" in kwargs:
@@ -29,9 +29,22 @@ def get_max_width(**kwargs):
     if "key3" in kwargs:
         key3 = kwargs["key3"]
         for i in range(len(api_response.to_dict()["items"])):
-            widths.append(len(api_response.to_dict()["items"][i][key1][key2][key3]))
-    for i in range(len(api_response.to_dict()["items"])):
-        widths.append(len(api_response.to_dict()["items"][i][key1][key2]))
+            try:
+                widths.append(len(api_response.to_dict()["items"][i][key1][key2][key3]))
+            except KeyError:
+                pass
+    if "security" in key2:
+        for i in range(len(api_response.to_dict()["items"])):
+            try:
+                widths.append(len(api_response.to_dict()["items"][i][key1][key2][0]))
+            except KeyError:
+                pass
+    else:
+        for i in range(len(api_response.to_dict()["items"])):
+            try:
+                widths.append(len(api_response.to_dict()["items"][i][key1][key2]))
+            except KeyError:
+                pass
     return(max(widths)+padding)
 
 # Enter a context with an instance of the API client
@@ -59,30 +72,43 @@ with pensando_dss.psm.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        #Uncomment this to suppress "InsecureRequestWarning: Unverified HTTPS request" message
-        #urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        description = "List all configured VRF objects on the Pensando PSM"
+        description = "List all configured Network objects on the Pensando PSM"
         parser = argparse.ArgumentParser(description=description)
-        parser.add_argument("-v", "--verbose", help = "Verbose output for all configured VRFs", action="store_true")
-        parser.add_argument("-n", "---name", help = "Show verbose information for specified VRF")
+        parser.add_argument("-v", "--verbose", help = "Verbose output for all configured Networks", action="store_true")
+        parser.add_argument("-n", "---name", help = "Show verbose information for specified Network")
         args = parser.parse_args()
         if not args.verbose and not args.name:
-            api_response = api_instance.list_virtual_router1()
-            print(f"\nThere are {len(api_response.to_dict()['items'])} configured VRFs\n")
+            api_response = api_instance.list_network1()
+            print(f"\nThere are {len(api_response.to_dict()['items'])} configured Networks\n")
             name_width = get_max_width(key1="meta", key2="name")
-            uuid_width = get_max_width(key1="meta", key2="uuid")
+            vrf_width = get_max_width(key1="spec", key2="virtual_router")
+            ing_nsp_width = get_max_width(key1="spec", key2="ingress_security_policy")
+            egr_nsp_width = get_max_width(key1="spec", key2="egress_security_policy")
+            vlan_width = 14
             propagation_status_width = get_max_width(key1="status", key2="propagation_status", key3="status")
-            print("VRF Name".ljust(name_width) + "UUID".ljust(uuid_width) + "Propagation Status".ljust(propagation_status_width) + "Modification Time")
-            print("........".ljust(name_width) + "....".ljust(uuid_width) + "..................".ljust(propagation_status_width) + ".................")
+            print("Network Name".ljust(name_width) + "VRF".ljust(vrf_width) + "VLAN".ljust(vlan_width) + "Ingress Policy".ljust(ing_nsp_width) + "Egress Policy".ljust(egr_nsp_width) + "Propagation Status".ljust(propagation_status_width))
+            print("........".ljust(name_width) + "...".ljust(vrf_width) + "....".ljust(vlan_width) +"..............".ljust(ing_nsp_width) +"............".ljust(egr_nsp_width) +"..................".ljust(propagation_status_width))
             for i in range(len(api_response.to_dict()["items"])):
-                print(f"{api_response.to_dict()['items'][i]['meta']['name'].ljust(name_width)}{api_response.to_dict()['items'][i]['meta']['uuid'].ljust(uuid_width)}{api_response.to_dict()['items'][i]['status']['propagation_status']['status'].ljust(propagation_status_width)}{api_response.to_dict()['items'][i]['meta']['mod_time']}")
+                network_name = api_response.to_dict()['items'][i]['meta']['name']
+                vrf_name = api_response.to_dict()['items'][i]['spec']['virtual_router']
+                vlan_id = str(api_response.to_dict()['items'][i]['spec']['vlan_id'])
+                propagation_status = api_response.to_dict()['items'][i]['status']['propagation_status']['status']
+                try:
+                    ing_nsp = api_response.to_dict()['items'][i]['spec']['ingress_security_policy'][0]
+                except KeyError:
+                    ing_nsp = ""
+                try:
+                    egr_nsp = api_response.to_dict()['items'][i]['spec']['egress_security_policy'][0]
+                except KeyError:
+                    egr_nsp = ""
+                print(f"{network_name.ljust(name_width)}{vrf_name.ljust(vrf_width)}{vlan_id.ljust(vlan_width)}{ing_nsp.ljust(ing_nsp_width)}{egr_nsp.ljust(egr_nsp_width)}{propagation_status.ljust(propagation_status_width)}")
         if args.verbose:
-            api_response = api_instance.list_virtual_router1()
-            pprint(api_response.to_dict())
+             api_response = api_instance.list_network1()
+             pprint(api_response.to_dict())
         if args.name:
-            api_response = api_instance.list_virtual_router1(o_name=args.name)
+            api_response = api_instance.list_network1(o_name=args.name)
     except pensando_dss.psm.ApiException as e:
-        print("Exception when calling NetworkV1Api->list_virtual_router1: %s\n" % e)
+        print("Exception when calling NetworkV1Api->list_network1: %s\n" % e)
 
 
 
