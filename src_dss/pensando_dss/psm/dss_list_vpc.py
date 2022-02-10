@@ -2,36 +2,23 @@ import time
 import os
 import pensando_dss
 import pensando_dss.psm
+import argparse
+import sys
+import urllib3
 from pensando_dss.psm.api import network_v1_api
 from pensando_dss.psm.models.network import *
 from pensando_dss.psm.model.network_virtual_router_list import NetworkVirtualRouterList
 from pensando_dss.psm.model.api_status import ApiStatus
 from pprint import pprint
+from dss_common import *
 from dateutil.parser import parse as dateutil_parser
-import argparse
-import sys
-import urllib3
+
 # Defining the host is optional and defaults to http://localhost
 # See configuration.py for a list of all supported configuration parameters.
 configuration = pensando_dss.psm.Configuration(
     psm_config_path = os.environ["HOME"] + "/.psm/config.json"
 )
 configuration.verify_ssl = False
-
-def get_max_width(**kwargs):
-    widths = []
-    padding = 10
-    if "key1" in kwargs:
-        key1 = kwargs["key1"]
-    if "key2" in kwargs:
-        key2 = kwargs["key2"]
-    if "key3" in kwargs:
-        key3 = kwargs["key3"]
-        for i in range(len(api_response.to_dict()["items"])):
-            widths.append(len(api_response.to_dict()["items"][i][key1][key2][key3]))
-    for i in range(len(api_response.to_dict()["items"])):
-        widths.append(len(api_response.to_dict()["items"][i][key1][key2]))
-    return(max(widths)+padding)
 
 # Enter a context with an instance of the API client
 with pensando_dss.psm.ApiClient(configuration) as api_client:
@@ -56,7 +43,6 @@ with pensando_dss.psm.ApiClient(configuration) as api_client:
     sort_order = "sort-order_example" # str | order to sort List results in. (optional)
     meta_only = True # bool | If MetaOnly is set to true, the watch event notification that matches the watch criteria will not contain the full object. It will only contain the information about the object that changed, i.e. which object and what changed. MetaOnly is not set by default. (optional)
 
-    # example passing only required values which don't have defaults set
     try:
         #Uncomment this to suppress "InsecureRequestWarning: Unverified HTTPS request" message
         #urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -68,9 +54,10 @@ with pensando_dss.psm.ApiClient(configuration) as api_client:
         if not args.verbose and not args.name:
             api_response = api_instance.list_virtual_router1()
             print(f"\nThere are {len(api_response.to_dict()['items'])} configured VRFs\n")
-            name_width = get_max_width(key1="meta", key2="name")
-            uuid_width = get_max_width(key1="meta", key2="uuid")
-            propagation_status_width = get_max_width(key1="status", key2="propagation_status", key3="status")
+            dict = api_response.to_dict()
+            name_width = get_max_width(dict, key1="meta", key2="name")
+            uuid_width = get_max_width(dict, key1="meta", key2="uuid")
+            propagation_status_width = get_max_width(dict, key1="status", key2="propagation_status", key3="status")
             print("VRF Name".ljust(name_width) + "UUID".ljust(uuid_width) + "Propagation Status".ljust(propagation_status_width) + "Modification Time")
             print("........".ljust(name_width) + "....".ljust(uuid_width) + "..................".ljust(propagation_status_width) + ".................")
             for i in range(len(api_response.to_dict()["items"])):
