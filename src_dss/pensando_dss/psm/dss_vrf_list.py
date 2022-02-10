@@ -1,4 +1,5 @@
 
+
 import time
 import os
 import pensando_dss
@@ -11,6 +12,7 @@ from pprint import pprint
 from dateutil.parser import parse as dateutil_parser
 import argparse
 import sys
+import urllib3
 # Defining the host is optional and defaults to http://localhost
 # See configuration.py for a list of all supported configuration parameters.
 configuration = pensando_dss.psm.Configuration(
@@ -18,6 +20,20 @@ configuration = pensando_dss.psm.Configuration(
 )
 configuration.verify_ssl = False
 
+def get_max_width(**kwargs):
+    widths = []
+    padding = 10
+    if "key1" in kwargs:
+        key1 = kwargs["key1"]
+    if "key2" in kwargs:
+        key2 = kwargs["key2"]
+    if "key3" in kwargs:
+        key3 = kwargs["key3"]
+        for i in range(len(api_response.to_dict()["items"])):
+            widths.append(len(api_response.to_dict()["items"][i][key1][key2][key3]))
+    for i in range(len(api_response.to_dict()["items"])):
+        widths.append(len(api_response.to_dict()["items"][i][key1][key2]))
+    return(max(widths)+padding)
 
 # Enter a context with an instance of the API client
 with pensando_dss.psm.ApiClient(configuration) as api_client:
@@ -44,24 +60,30 @@ with pensando_dss.psm.ApiClient(configuration) as api_client:
 
     # example passing only required values which don't have defaults set
     try:
-        # List VirtualRouter objects
+        '''
+        Uncomment this to suppress "InsecureRequestWarning: Unverified HTTPS request" message
+        #urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        '''
         description = "List all configured VRF objects on the Pensando PSM"
         parser = argparse.ArgumentParser(description=description)
-        parser.add_argument("-a", "--all", help = "Show all configured VRFs", action="store_true")
-        parser.add_argument("-name", "---name", help = "Show specific VRF")
+        parser.add_argument("-v", "--verbose", help = "Verbose output for all configured VRFs", action="store_true")
+        parser.add_argument("-n", "---name", help = "Show verbose information for specified VRF")
         args = parser.parse_args()
-        if not args.all and not args.name:
-            print(f"\t Either all toggle or specific VRF name is required, please use python3 {sys.argv[0]} -h for help text")
-            exit()
-        if args.all:
+        if not args.verbose and not args.name:
             api_response = api_instance.list_virtual_router1()
-            pprint(api_response)
+            print(f"\nThere are {len(api_response.to_dict()['items'])} configured VRFs\n")
+            name_width = get_max_width(key1="meta", key2="name")
+            uuid_width = get_max_width(key1="meta", key2="uuid")
+            propagation_status_width = get_max_width(key1="status", key2="propagation_status", key3="status")
+            print("VRF Name".ljust(name_width) + "UUID".ljust(uuid_width) + "Propagation Status".ljust(propagation_status_width) + "Modification Time")
+            print("........".ljust(name_width) + "....".ljust(uuid_width) + "..................".ljust(propagation_status_width) + ".................")
+            for i in range(len(api_response.to_dict()["items"])):
+                print(f"{api_response.to_dict()['items'][i]['meta']['name'].ljust(name_width)}{api_response.to_dict()['items'][i]['meta']['uuid'].ljust(uuid_width)}{api_response.to_dict()['items'][i]['status']['propagation_status']['status'].ljust(propagation_status_width)}{api_response.to_dict()['items'][i]['meta']['mod_time']}")
+        if args.verbose:
+            api_response = api_instance.list_virtual_router1()
+            pprint(api_response.to_dict())
         if args.name:
             api_response = api_instance.list_virtual_router1(o_name=args.name)
-            pprint(api_response)
-    except pensando_dss.psm.ApiException as e:
-        print("Exception when calling NetworkV1Api->list_virtual_router1: %s\n" % e)        
-
     except pensando_dss.psm.ApiException as e:
         print("Exception when calling NetworkV1Api->list_virtual_router1: %s\n" % e)
 

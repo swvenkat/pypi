@@ -97,7 +97,7 @@ class Configuration(object):
                  disabled_client_side_validations="",
                  server_index=None, server_variables=None,
                  server_operation_index=None, server_operation_variables=None,
-                 ssl_ca_cert=None, debugMode=False, interactive_mode=False,
+                 ssl_ca_cert=None, debugMode=False, interactive_mode=True,
                  psm_basic_auth=False,
                  ):
         """Constructor
