@@ -2,50 +2,23 @@ import time
 import os
 import pensando_dss
 import pensando_dss.psm
+import argparse
+import sys
+import urllib3
 from pensando_dss.psm.api import network_v1_api
 from pensando_dss.psm.models.network import *
 from pensando_dss.psm.model.network_virtual_router_list import NetworkVirtualRouterList
 from pensando_dss.psm.model.api_status import ApiStatus
 from pprint import pprint
+from dss_common import *
 from dateutil.parser import parse as dateutil_parser
-import argparse
-import sys
-import urllib3
+
 # Defining the host is optional and defaults to http://localhost
 # See configuration.py for a list of all supported configuration parameters.
 configuration = pensando_dss.psm.Configuration(
     psm_config_path = os.environ["HOME"] + "/.psm/config.json"
 )
 configuration.verify_ssl = False
-
-#This is used to get the max width to use for displaying columns
-def get_max_width(**kwargs):
-    widths = []
-    padding = 5
-    if "key1" in kwargs:
-        key1 = kwargs["key1"]
-    if "key2" in kwargs:
-        key2 = kwargs["key2"]
-    if "key3" in kwargs:
-        key3 = kwargs["key3"]
-        for i in range(len(api_response.to_dict()["items"])):
-            try:
-                widths.append(len(api_response.to_dict()["items"][i][key1][key2][key3]))
-            except KeyError:
-                pass
-    if "security" in key2:
-        for i in range(len(api_response.to_dict()["items"])):
-            try:
-                widths.append(len(api_response.to_dict()["items"][i][key1][key2][0]))
-            except KeyError:
-                pass
-    else:
-        for i in range(len(api_response.to_dict()["items"])):
-            try:
-                widths.append(len(api_response.to_dict()["items"][i][key1][key2]))
-            except KeyError:
-                pass
-    return(max(widths)+padding)
 
 # Enter a context with an instance of the API client
 with pensando_dss.psm.ApiClient(configuration) as api_client:
@@ -80,12 +53,13 @@ with pensando_dss.psm.ApiClient(configuration) as api_client:
         if not args.verbose and not args.name:
             api_response = api_instance.list_network1()
             print(f"\nThere are {len(api_response.to_dict()['items'])} configured Networks\n")
-            name_width = get_max_width(key1="meta", key2="name")
-            vrf_width = get_max_width(key1="spec", key2="virtual_router")
-            ing_nsp_width = get_max_width(key1="spec", key2="ingress_security_policy")
-            egr_nsp_width = get_max_width(key1="spec", key2="egress_security_policy")
+            dict = api_response.to_dict()
+            name_width = get_max_width(dict, key1="meta", key2="name")
+            vrf_width = get_max_width(dict, key1="spec", key2="virtual_router")
+            ing_nsp_width = get_max_width(dict, key1="spec", key2="ingress_security_policy")
+            egr_nsp_width = get_max_width(dict, key1="spec", key2="egress_security_policy")
             vlan_width = 14
-            propagation_status_width = get_max_width(key1="status", key2="propagation_status", key3="status")
+            propagation_status_width = get_max_width(dict, key1="status", key2="propagation_status", key3="status")
             print("Network Name".ljust(name_width) + "VRF".ljust(vrf_width) + "VLAN".ljust(vlan_width) + "Ingress Policy".ljust(ing_nsp_width) + "Egress Policy".ljust(egr_nsp_width) + "Propagation Status".ljust(propagation_status_width))
             print("........".ljust(name_width) + "...".ljust(vrf_width) + "....".ljust(vlan_width) +"..............".ljust(ing_nsp_width) +"............".ljust(egr_nsp_width) +"..................".ljust(propagation_status_width))
             for i in range(len(api_response.to_dict()["items"])):
@@ -107,8 +81,6 @@ with pensando_dss.psm.ApiClient(configuration) as api_client:
              pprint(api_response.to_dict())
         if args.name:
             api_response = api_instance.list_network1(o_name=args.name)
+            pprint(api_response.to_dict())
     except pensando_dss.psm.ApiException as e:
         print("Exception when calling NetworkV1Api->list_network1: %s\n" % e)
-
-
-

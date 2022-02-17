@@ -1,6 +1,6 @@
 def get_max_width(dict, **kwargs):
     widths = []
-    padding = 5
+    padding = 10
     if "key1" in kwargs:
         key1 = kwargs["key1"]
     if "key2" in kwargs:
@@ -16,6 +16,13 @@ def get_max_width(dict, **kwargs):
         for i in range(len(dict["items"])):
             try:
                 widths.append(len(dict["items"][i][key1][key2][0]))
+            except KeyError:
+                pass
+    if "proto_ports" in key2:
+        for i in range(len(dict["items"])):
+            try:
+                for j in range (len(dict['items'][i]['spec']['proto_ports'])):
+                    widths.append(len(dict['items'][i]['spec']['proto_ports'][j]['ports']))
             except KeyError:
                 pass
     else:
